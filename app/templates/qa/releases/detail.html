@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}{{ release.name }} - Release Detail - QualityHub{% endblock %}
+{% block content %}
+<div class="flex h-screen overflow-hidden bg-slate-950 text-slate-100">
+    {% include "components/sidebar.html" %}
+    <div class="flex-1 flex flex-col overflow-hidden">
+        {% include "components/navbar.html" %}
+        <main class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
+
+            <!-- Back + Header -->
+            <div>
+                <a href="/dashboard/releases" class="text-xs text-slate-500 hover:text-brand-400 transition-colors">← Back to Releases</a>
+                <div class="mt-2 flex items-center gap-3">
+                    <h1 class="text-2xl font-extrabold text-slate-100">{{ release.name }}</h1>
+                    <span class="px-2 py-0.5 text-xs font-semibold rounded-full border
+                        {% if release.status == 'released' %}bg-emerald-500/20 text-emerald-300 border-emerald-500/30
+                        {% elif release.status == 'in_progress' %}bg-brand-500/20 text-brand-300 border-brand-500/30
+                        {% elif release.status == 'cancelled' %}bg-rose-500/20 text-rose-300 border-rose-500/30
+                        {% else %}bg-slate-600/40 text-slate-400 border-slate-600/40{% endif %}">
+                        {{ release.status.replace('_',' ').title() }}
+                    </span>
+                </div>
+                {% if release.description %}
+                <p class="text-sm text-slate-400 mt-1">{{ release.description }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Readiness Scorecards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <!-- Coverage -->
+                <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800/60 shadow-md">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Coverage</p>
+                    <p class="mt-2 text-3xl font-extrabold
+                        {% if readiness.coverage_percentage >= 80 %}text-emerald-400
+                        {% elif readiness.coverage_percentage >= 50 %}text-amber-400
+                        {% else %}text-rose-400{% endif %}">
+                        {{ readiness.coverage_percentage }}%
+                    </p>
+                    <p class="text-[10px] text-slate-500 mt-1">{{ readiness.executed_test_cases }} / {{ readiness.total_test_cases }} cases run</p>
+                </div>
+                <!-- Pass Rate -->
+                <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800/60 shadow-md">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Pass Rate</p>
+                    <p class="mt-2 text-3xl font-extrabold
+                        {% if readiness.pass_rate_percentage >= 90 %}text-emerald-400
+                        {% elif readiness.pass_rate_percentage >= 70 %}text-amber-400
+                        {% else %}text-rose-400{% endif %}">
+                        {{ readiness.pass_rate_percentage }}%
+                    </p>
+                    <p class="text-[10px] text-slate-500 mt-1">Of all executed runs</p>
+                </div>
+                <!-- Open Defects -->
+                <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800/60 shadow-md">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Open Defects</p>
+                    <p class="mt-2 text-3xl font-extrabold {% if readiness.open_defects_count > 0 %}text-rose-400{% else %}text-emerald-400{% endif %}">
+                        {{ readiness.open_defects_count }}
+                    </p>
+                    <p class="text-[10px] text-slate-500 mt-1">Unresolved bugs</p>
+                </div>
+                <!-- Target Date -->
+                <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800/60 shadow-md">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Target Date</p>
+                    <p class="mt-2 text-lg font-bold text-slate-200">
+                        {{ release.target_date.strftime('%b %d, %Y') if release.target_date else '—' }}
+                    </p>
+                    <p class="text-[10px] text-slate-500 mt-1">Release deadline</p>
+                </div>
+            </div>
+
+            <!-- Recent Runs + Open Defects -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Recent Test Runs -->
+                <div class="bg-slate-900 border border-slate-800/60 rounded-2xl overflow-hidden">
+                    <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between">
+                        <h2 class="text-sm font-bold text-slate-200">Recent Test Runs</h2>
+                        <a href="/dashboard/test-runs?release_id={{ release.id }}" class="text-xs text-brand-400 hover:text-brand-300">View all →</a>
+                    </div>
+                    {% if recent_runs %}
+                    <ul class="divide-y divide-slate-800/60">
+                        {% for run in recent_runs %}
+                        <li class="px-5 py-3 flex items-center justify-between hover:bg-slate-800/30 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <span class="h-2 w-2 rounded-full flex-shrink-0
+                                    {% if run.status == 'passed' %}bg-emerald-400
+                                    {% elif run.status == 'failed' %}bg-rose-400
+                                    {% elif run.status == 'skipped' %}bg-amber-400
+                                    {% else %}bg-slate-500{% endif %}">
+                                </span>
+                                <span class="text-xs text-slate-400">{{ run.source.capitalize() }}</span>
+                            </div>
+                            <span class="text-xs text-slate-500">{{ run.created_at.strftime('%b %d %H:%M') }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="p-6 text-center text-sm text-slate-500">No test runs yet.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Open Defects -->
+                <div class="bg-slate-900 border border-slate-800/60 rounded-2xl overflow-hidden">
+                    <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between">
+                        <h2 class="text-sm font-bold text-slate-200">Open Defects</h2>
+                        <a href="/dashboard/defects?release_id={{ release.id }}&status=open" class="text-xs text-brand-400 hover:text-brand-300">View all →</a>
+                    </div>
+                    {% if open_defects %}
+                    <ul class="divide-y divide-slate-800/60">
+                        {% for d in open_defects %}
+                        <li class="px-5 py-3 flex items-center justify-between hover:bg-slate-800/30 transition-colors">
+                            <span class="text-xs text-slate-200 truncate max-w-[200px]">{{ d.title }}</span>
+                            <span class="px-1.5 py-0.5 rounded-full text-[10px] font-semibold border
+                                {% if d.severity == 'critical' %}bg-rose-500/20 text-rose-300 border-rose-500/30
+                                {% elif d.severity == 'high' %}bg-orange-500/20 text-orange-300 border-orange-500/30
+                                {% else %}bg-amber-500/20 text-amber-300 border-amber-500/30{% endif %}">
+                                {{ d.severity.capitalize() }}
+                            </span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="p-6 text-center text-sm text-slate-500">🎉 No open defects!</p>
+                    {% endif %}
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+{% endblock %}

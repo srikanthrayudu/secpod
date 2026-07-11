@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}New Test Case - QualityHub{% endblock %}
+{% block content %}
+<div class="flex h-screen overflow-hidden bg-slate-950 text-slate-100">
+    {% include "components/sidebar.html" %}
+    <div class="flex-1 flex flex-col overflow-hidden">
+        {% include "components/navbar.html" %}
+        <main class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
+            <div>
+                <a href="/dashboard/test-cases" class="text-xs text-slate-500 hover:text-brand-400">← Back</a>
+                <h1 class="text-2xl font-extrabold text-slate-100 mt-2">New Test Case</h1>
+            </div>
+
+            <!-- AI Draft Panel -->
+            <div class="bg-gradient-to-r from-brand-950/60 to-fuchsia-950/30 border border-brand-800/40 rounded-2xl p-5" x-data="{ loading: false }">
+                <h2 class="text-sm font-bold text-brand-300 mb-1">✨ AI Draft from Requirement</h2>
+                <p class="text-xs text-slate-400 mb-3">Paste a requirement to auto-generate test steps.</p>
+                <form method="GET" action="/dashboard/test-cases/new" class="flex gap-2" @submit="loading = true">
+                    <input name="requirement" value="{{ requirement }}" placeholder="Describe the requirement..." class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-brand-500">
+                    <button type="submit" :disabled="loading" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold rounded-xl disabled:opacity-60">
+                        <span x-show="!loading">Draft</span><span x-show="loading">Drafting...</span>
+                    </button>
+                </form>
+            </div>
+
+            {% if error %}<div class="p-4 rounded-xl bg-rose-950/40 border border-rose-500/30 text-rose-300 text-sm">{{ error }}</div>{% endif %}
+
+            <form method="POST" action="/dashboard/test-cases" class="space-y-5 bg-slate-900 border border-slate-800/60 rounded-2xl p-6"
+                  x-data="{ steps: {{ (draft.draft_steps if draft else [])|tojson }}, newStep: '' }">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Title *</label>
+                        <input name="title" required placeholder="e.g. Verify login with valid credentials" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Module *</label>
+                        <input name="module" required placeholder="e.g. Authentication" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Priority</label>
+                        <select name="priority" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-brand-500">
+                            <option value="medium">Medium</option>
+                            <option value="critical">Critical</option>
+                            <option value="high">High</option>
+                            <option value="low">Low</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Tags (comma-separated)</label>
+                        <input name="tags" placeholder="e.g. smoke, auth" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-brand-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-2">Test Steps</label>
+                    <template x-for="(step, idx) in steps" :key="idx">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-xs text-slate-500 w-5 text-right" x-text="idx + 1 + '.'"></span>
+                            <input :name="'steps'" :value="step" @input="steps[idx] = $event.target.value" class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-brand-500">
+                            <button type="button" @click="steps.splice(idx, 1)" class="text-slate-600 hover:text-rose-400">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            </button>
+                        </div>
+                    </template>
+                    <div class="flex items-center gap-2 mt-2">
+                        <input x-model="newStep" placeholder="Add step and press Enter..." @keydown.enter.prevent="if(newStep.trim()){steps.push(newStep.trim());newStep=''}" class="flex-1 bg-slate-800 border border-dashed border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-brand-500">
+                        <button type="button" @click="if(newStep.trim()){steps.push(newStep.trim());newStep=''}" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm rounded-xl">Add</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Expected Result *</label>
+                    <textarea name="expected_result" required rows="3" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-brand-500 resize-none">{{ draft.expected_result if draft else '' }}</textarea>
+                </div>
+
+                <button type="submit" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-xl text-sm">Save Test Case</button>
+            </form>
+        </main>
+    </div>
+</div>
+{% endblock %}

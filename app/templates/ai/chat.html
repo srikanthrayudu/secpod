@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}AI Assistant - QualityHub{% endblock %}
+
+{% block content %}
+<div class="flex h-screen overflow-hidden bg-slate-950 text-slate-100" x-data="{ mobileMenuOpen: false }">
+    
+    <!-- Sidebar -->
+    {% include "components/sidebar.html" %}
+    
+    <!-- Mobile Sidebar -->
+    <div x-show="mobileMenuOpen" class="fixed inset-0 z-40 flex md:hidden" style="display: none;">
+        <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm" @click="mobileMenuOpen = false"></div>
+        <div class="relative flex w-full max-w-xs flex-1 flex-col bg-slate-900 border-r border-slate-800 p-6">
+            <div class="flex items-center justify-between mb-8">
+                <span class="text-xl font-bold bg-gradient-to-r from-brand-400 via-fuchsia-400 to-indigo-400 bg-clip-text text-transparent">QualityHub</span>
+                <button @click="mobileMenuOpen = false" class="text-slate-400 hover:text-slate-200">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <nav class="space-y-2">
+                <a href="/dashboard" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-400">Overview</a>
+                <a href="/dashboard/ai" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold bg-brand-500/10 text-brand-300">AI Assistant</a>
+                {% if user.role == 'admin' %}
+                <a href="/dashboard/users" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-400">Users Admin</a>
+                {% endif %}
+                <a href="/dashboard/profile" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-400">My Profile</a>
+                <a href="/logout" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-rose-400">Log Out</a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- Top Nav -->
+        {% include "components/navbar.html" %}
+
+        <!-- Chat Container -->
+        <main class="flex-1 flex flex-col justify-between overflow-hidden bg-slate-950/40 relative">
+            <div class="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-950/10 via-slate-950 to-slate-950"></div>
+
+            <!-- Scrollable Messages Window -->
+            <div id="chat-window" class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 flex flex-col justify-start">
+                
+                <!-- Initial Welcome / Empty State -->
+                <div class="max-w-2xl mx-auto text-center py-12 space-y-4" id="empty-chat-state">
+                    <div class="h-14 w-14 rounded-2xl bg-brand-500/10 border border-brand-500/30 text-brand-400 flex items-center justify-center mx-auto shadow-lg shadow-brand-500/5">
+                        <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-200">Say Hello to QualityHub AI</h2>
+                        <p class="text-xs text-slate-400 mt-1 max-w-md mx-auto">Ask questions about your tech stack, system specifications, or run a Retrieval-Augmented Generation (RAG) search over seeded repository logs.</p>
+                    </div>
+                    <!-- Quick Prompt Suggestions -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-6 max-w-lg mx-auto">
+                        <button onclick="fillPrompt('Explain FastAPI framework benefits.')" class="p-3 bg-slate-900 hover:bg-slate-800/80 border border-slate-800 rounded-xl text-left text-xs text-slate-300 transition-colors">
+                            ⚡ "Explain FastAPI framework benefits"
+                        </button>
+                        <button onclick="fillPrompt('What is HTMX used for?')" class="p-3 bg-slate-900 hover:bg-slate-800/80 border border-slate-800 rounded-xl text-left text-xs text-slate-300 transition-colors">
+                            🧠 "What is HTMX used for?"
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Chat Messages Feed Mount -->
+                <div id="chat-messages" class="space-y-6 max-w-3xl w-full mx-auto"></div>
+            </div>
+
+            <!-- Input area panel -->
+            <div class="p-6 border-t border-slate-800/80 bg-slate-900/20 backdrop-blur-md">
+                <div class="max-w-3xl w-full mx-auto relative">
+                    
+                    <!-- Form submitting prompt -->
+                    <form hx-post="/dashboard/ai/chat"
+                          hx-target="#chat-messages"
+                          hx-swap="beforeend"
+                          hx-indicator="#chat-indicator"
+                          hx-disabled-elt="#chat-submit, #chat-input"
+                          hx-on::after-request="document.getElementById('chat-input').value = ''; document.getElementById('empty-chat-state').style.display = 'none'; scrollChatDown();"
+                          class="flex items-center gap-3">
+                        <input type="text" id="chat-input" name="prompt" required placeholder="Type a message, ask about FastAPI, Podman, HTMX..."
+                               class="w-full bg-slate-950 border border-slate-800/80 rounded-xl pl-4 pr-12 py-3.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500 disabled:opacity-60 disabled:cursor-not-allowed">
+
+                        <!-- Spinner — visible during request, sits left of the send button -->
+                        <span id="chat-indicator" class="htmx-indicator absolute right-12 top-3.5">
+                            <svg class="animate-spin h-4 w-4 text-brand-400" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                        </span>
+
+                        <button type="submit" id="chat-submit"
+                                class="absolute right-2 top-2 p-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg shadow shadow-brand-600/25 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script>
+    function fillPrompt(text) {
+        const input = document.getElementById('chat-input');
+        if (input) {
+            input.value = text;
+            input.focus();
+        }
+    }
+    
+    function scrollChatDown() {
+        setTimeout(() => {
+            const chatWin = document.getElementById('chat-window');
+            if (chatWin) {
+                chatWin.scrollTop = chatWin.scrollHeight;
+            }
+        }, 100);
+    }
+</script>
+{% endblock %}

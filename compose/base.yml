@@ -1,0 +1,58 @@
+version: "3.9"
+
+services:
+  # ---- APP (image will be overridden by CI) ----
+  app:
+    # Placeholder – CI will replace the image via the `image:` field
+    # (Coolify lets you set the image per‑service when you import the file)
+    build:
+      context: .
+    restart: unless-stopped
+    env_file:
+      - .env.staging   # will be swapped for .env.production in the prod override
+    depends_on:
+      - db
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  # ---- DATABASE ----
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  # ---- REDIS ----
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+
+  # ---- CADDY (reverse‑proxy) ----
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on:
+      - app
+
+volumes:
+  pg_data:
+  redis_data:
+  caddy_data:

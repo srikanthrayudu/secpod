@@ -1,0 +1,29 @@
+# Ruff configuration — Python 3.14, FastAPI project
+[tool.ruff]
+target-version = "py314"
+line-length = 100
+exclude = [
+    ".venv",
+    "migrations",
+    "__pycache__",
+    ".pytest_cache",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "B008",  # Do not perform function calls in argument defaults (FastAPI Depends pattern)
+    "UP007", # Use X | Y for union types (can break older runtime compat)
+    "E501",  # Line too long (handled by line-length above)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]

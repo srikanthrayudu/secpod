@@ -1,0 +1,133 @@
+# =============================================================
+# Global options
+# =============================================================
+{
+    email <YOUR-EMAIL>          # Let’s Encrypt email (used for staging & prod)
+    admin off
+    log {
+        output stdout
+        format json
+        fields {
+            request {
+                remote_ip
+                host
+                uri
+                method
+                user_agent
+                headers
+            }
+        }
+    }
+}
+
+# -------------------------------------------------------------
+# LOCAL DEV (self‑signed cert for localhost)
+# -------------------------------------------------------------
+localhost:8080, localhost:8443 {
+    # HTTP → HTTPS redirect (only needed if you listen on 8080)
+    redir https://{host}:8443{uri} 308
+
+    # For local dev we generate a self‑signed cert on the fly.
+    # Caddy will automatically create and trust it if you run:
+    #   caddy trust
+    tls internal
+
+    encode gzip
+    header {
+        Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+        X-Content-Type-Options nosniff
+        X-Frame-Options SAMEORIGIN
+        Referrer-Policy no-referrer-when-downgrade
+        -Server
+    }
+
+    @health {
+        path /health*
+    }
+    reverse_proxy @health app:3000 {
+        health_path /health
+        health_interval 10s
+        health_timeout 2s
+        health_unhealthy_threshold 3
+        health_healthy_threshold 2
+    }
+
+    reverse_proxy app:3000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+        max_fails 3
+        fail_timeout 10s
+    }
+}
+
+# -------------------------------------------------------------
+# STAGING
+# -------------------------------------------------------------
+staging.myapp.example.com {
+    redir https://{host}{uri} 308
+    encode gzip
+    header {
+        Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+        X-Content-Type-Options nosniff
+        X-Frame-Options SAMEORIGIN
+        Referrer-Policy no-referrer-when-downgrade
+        -Server
+    }
+
+    @health {
+        path /health*
+    }
+    reverse_proxy @health app-staging:3000 {
+        health_path /health
+        health_interval 10s
+        health_timeout 2s
+        health_unhealthy_threshold 3
+        health_healthy_threshold 2
+    }
+
+    reverse_proxy app-staging:3000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+        max_fails 3
+        fail_timeout 10s
+    }
+}
+
+# -------------------------------------------------------------
+# PRODUCTION
+# -------------------------------------------------------------
+myapp.example.com {
+    redir https://{host}{uri} 308
+    encode gzip
+    header {
+        Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+        X-Content-Type-Options nosniff
+        X-Frame-Options SAMEORIGIN
+        Referrer-Policy no-referrer-when-downgrade
+        -Server
+    }
+
+    @health {
+        path /health*
+    }
+    reverse_proxy @health app:3000 {
+        health_path /health
+        health_interval 10s
+        health_timeout 2s
+        health_unhealthy_threshold 3
+        health_healthy_threshold 2
+    }
+
+    reverse_proxy app:3000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+        max_fails 3
+        fail_timeout 10s
+    }
+}

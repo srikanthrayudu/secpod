@@ -1,0 +1,65 @@
+<div class="flex items-center justify-between mb-5">
+    <h3 class="text-lg font-bold text-slate-100">Edit Account</h3>
+    <button @click="editModalOpen = false" class="text-slate-500 hover:text-slate-300">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+</div>
+
+<form hx-post="/dashboard/users/{{ target_user.id }}/edit"
+      hx-swap="none"
+      hx-indicator="#modal-save-indicator"
+      hx-disabled-elt="#modal-save-btn"
+      class="space-y-4">
+    <!-- Email (read-only) -->
+    <div>
+        <label class="block text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Email Address</label>
+        <input type="text" disabled value="{{ target_user.email }}" 
+               class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-xs text-slate-500 cursor-not-allowed">
+    </div>
+
+    <!-- Full Name -->
+    <div>
+        <label for="modal-full-name" class="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Full Name</label>
+        <input type="text" id="modal-full-name" name="full_name" value="{{ target_user.full_name or '' }}" required
+               class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+    </div>
+
+    <!-- Role select -->
+    <div>
+        <label for="modal-role" class="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Access Role</label>
+        <select id="modal-role" name="role"
+                class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-xs text-slate-300 focus:outline-none focus:border-brand-500">
+            <option value="user" {% if target_user.role == 'user' %}selected{% endif %}>User</option>
+            <option value="admin" {% if target_user.role == 'admin' %}selected{% endif %}>Admin (Full Privileges)</option>
+        </select>
+    </div>
+
+    <!-- Status Toggles -->
+    <div class="space-y-2.5 pt-2">
+        <label class="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" name="is_active" value="True" {% if target_user.is_active %}checked{% endif %}
+                   class="h-4 w-4 bg-slate-950 border-slate-800 text-brand-600 rounded focus:ring-brand-500 focus:ring-offset-slate-900 focus:ring-2">
+            <span class="text-xs text-slate-300">Account Active (Allows Sign In)</span>
+        </label>
+
+        <label class="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" name="is_verified" value="True" {% if target_user.is_verified %}checked{% endif %}
+                   class="h-4 w-4 bg-slate-950 border-slate-800 text-brand-600 rounded focus:ring-brand-500 focus:ring-offset-slate-900 focus:ring-2">
+            <span class="text-xs text-slate-300">Email Verified (Bypasses verification steps)</span>
+        </label>
+    </div>
+
+    <div class="flex justify-end gap-3 pt-4 border-t border-slate-800/80 mt-6">
+        <button type="button" @click="editModalOpen = false" 
+                class="px-4 py-2 border border-slate-800 rounded-lg text-xs text-slate-400 hover:text-slate-200 transition-colors">
+            Cancel
+        </button>
+        <button type="submit" id="modal-save-btn"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-lg text-xs transition-colors shadow-md shadow-brand-500/10 disabled:opacity-60 disabled:cursor-not-allowed">
+            <span id="modal-save-indicator" class="htmx-indicator">
+                <svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+            </span>
+            Save Changes
+        </button>
+    </div>
+</form>

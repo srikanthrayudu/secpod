@@ -1,0 +1,21 @@
+<nav class="flex items-center gap-1.5 text-xs text-slate-500" aria-label="Breadcrumb">
+    <a href="/dashboard"
+       hx-get="/dashboard" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true"
+       class="hover:text-slate-300 transition-colors">
+        Home
+    </a>
+    {% if breadcrumbs %}
+        {% for crumb in breadcrumbs %}
+        <svg class="h-3 w-3 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        {% if crumb.url and not loop.last %}
+        <a href="{{ crumb.url }}"
+           hx-get="{{ crumb.url }}" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true"
+           class="hover:text-slate-300 transition-colors">
+            {{ crumb.label }}
+        </a>
+        {% else %}
+        <span class="text-slate-300 font-medium">{{ crumb.label }}</span>
+        {% endif %}
+        {% endfor %}
+    {% endif %}
+</nav>

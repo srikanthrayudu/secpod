@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}AI Playground - QualityHub{% endblock %}
+
+{% block content %}
+<div class="flex h-screen overflow-hidden bg-slate-950 text-slate-100" x-data="{ tab: 'draft' }">
+    {% include "components/sidebar.html" %}
+
+    <div class="flex-1 flex flex-col overflow-hidden">
+        {% include "components/navbar.html" %}
+
+        <main class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
+            <div>
+                <h1 class="text-2xl font-extrabold text-slate-100">AI Playground</h1>
+                <p class="text-sm text-slate-400 mt-1">Draft test cases from requirements or summarize failure patterns across automated runs.</p>
+            </div>
+
+            <div class="flex gap-2 border-b border-slate-800/80 pb-1">
+                <button @click="tab = 'draft'"
+                    :class="tab === 'draft' ? 'text-brand-300 border-brand-500' : 'text-slate-500 border-transparent hover:text-slate-300'"
+                    class="px-4 py-2 text-sm font-semibold border-b-2 transition-colors">
+                    Draft Test Case
+                </button>
+                <button @click="tab = 'summarize'"
+                    :class="tab === 'summarize' ? 'text-brand-300 border-brand-500' : 'text-slate-500 border-transparent hover:text-slate-300'"
+                    class="px-4 py-2 text-sm font-semibold border-b-2 transition-colors">
+                    Failure Summary
+                </button>
+            </div>
+
+            <div x-show="tab === 'draft'" class="max-w-3xl space-y-4">
+                <div class="bg-slate-900 border border-slate-800/60 rounded-2xl p-6">
+                    <h2 class="text-sm font-bold text-slate-300 mb-3">Describe a requirement</h2>
+                    <form hx-post="/dashboard/ai/draft"
+                          hx-target="#draft-result"
+                          hx-indicator="#draft-spinner"
+                          class="space-y-4">
+                        <textarea name="requirement_text" rows="5" required maxlength="2000"
+                            placeholder="Example: User can reset password via email link and must set a password meeting complexity rules."
+                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-500"></textarea>
+                        <div class="flex items-center gap-3">
+                            <button type="submit"
+                                class="px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold rounded-xl transition-colors">
+                                Generate Draft
+                            </button>
+                            <span id="draft-spinner" class="htmx-indicator text-xs text-slate-500">Generating…</span>
+                        </div>
+                    </form>
+                </div>
+                <div id="draft-result"></div>
+            </div>
+
+            <div x-show="tab === 'summarize'" x-cloak class="max-w-3xl space-y-4">
+                <div class="bg-slate-900 border border-slate-800/60 rounded-2xl p-6">
+                    <h2 class="text-sm font-bold text-slate-300 mb-3">Summarize failure patterns</h2>
+                    {% if user.role in ['qa_lead', 'admin'] %}
+                    <form hx-post="/dashboard/ai/summarize"
+                          hx-target="#summary-result"
+                          hx-indicator="#summary-spinner"
+                          class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Release</label>
+                            <select name="release_id" required
+                                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-brand-500">
+                                <option value="">Select a release…</option>
+                                {% for release in releases %}
+                                <option value="{{ release.id }}">{{ release.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Recent failures to analyze</label>
+                            <input type="number" name="limit" value="50" min="1" max="200"
+                                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-brand-500">
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button type="submit"
+                                class="px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold rounded-xl transition-colors">
+                                Summarize Failures
+                            </button>
+                            <span id="summary-spinner" class="htmx-indicator text-xs text-slate-500">Analyzing…</span>
+                        </div>
+                    </form>
+                    {% else %}
+                    <p class="text-sm text-slate-500">Failure summarization is available to QA Leads and Admins.</p>
+                    {% endif %}
+                </div>
+                <div id="summary-result"></div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

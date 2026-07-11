@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile - QualityHub{% endblock %}
+
+{% block content %}
+<div class="flex h-screen overflow-hidden bg-slate-950 text-slate-100" x-data="{ mobileMenuOpen: false }">
+    
+    <!-- Sidebar -->
+    {% include "components/sidebar.html" %}
+    
+    <!-- Mobile Drawer -->
+    <div x-show="mobileMenuOpen" class="fixed inset-0 z-40 flex md:hidden" style="display: none;">
+        <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm" @click="mobileMenuOpen = false"></div>
+        <div class="relative flex w-full max-w-xs flex-1 flex-col bg-slate-900 border-r border-slate-800 p-6">
+            <div class="flex items-center justify-between mb-8">
+                <span class="text-xl font-bold bg-gradient-to-r from-brand-400 via-fuchsia-400 to-indigo-400 bg-clip-text text-transparent">QualityHub</span>
+                <button @click="mobileMenuOpen = false" class="text-slate-400 hover:text-slate-200">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <nav class="space-y-2">
+                <a href="/dashboard" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-400">Overview</a>
+                <a href="/dashboard/ai" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-400">AI Assistant</a>
+                {% if user.role == 'admin' %}
+                <a href="/dashboard/users" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-400">Users Admin</a>
+                {% endif %}
+                <a href="/dashboard/profile" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold bg-brand-500/10 text-brand-300">My Profile</a>
+                <a href="/logout" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-rose-400">Log Out</a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- Top Nav -->
+        {% include "components/navbar.html" %}
+
+        <!-- Content -->
+        <main class="flex-1 overflow-y-auto p-6 md:p-8 max-w-4xl w-full mx-auto space-y-6">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-100">Profile Settings</h1>
+                <p class="text-xs text-slate-400 mt-1">Configure user information, bio, corporate details, and security details.</p>
+            </div>
+
+            <!-- Profile form wrapper targeting the outer HTML of the card -->
+            <div id="profile-card-wrapper" class="bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl p-8 rounded-2xl shadow-xl">
+                {% include "dashboard/profile_card.html" %}
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

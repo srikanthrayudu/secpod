@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}QualityHub{% endblock %}</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Alpine.js -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            50: '#f5f3ff', 100: '#ede9fe', 200: '#ddd6fe',
+                            300: '#c084fc', 400: '#a855f7', 500: '#8b5cf6',
+                            600: '#7c3aed', 700: '#6d28d9', 800: '#5b21b6',
+                            900: '#4c1d95', 950: '#0c0714',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+        ::-webkit-scrollbar-thumb { background: rgba(124, 58, 237, 0.4); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(124, 58, 237, 0.6); }
+        /* htmx-indicator hidden by default, shown during requests */
+        .htmx-indicator { opacity: 0; transition: opacity 200ms ease-in; }
+        .htmx-request .htmx-indicator { opacity: 1; }
+        .htmx-request.htmx-indicator { opacity: 1; }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body class="h-full flex flex-col font-sans"
+      x-data="{ toasts: [] }"
+      @toast.window="toasts.push({ id: Date.now(), message: $event.detail.message, type: $event.detail.type || 'info' })">
+
+    <!-- Toast Notification System -->
+    {% include "partials/notifications.html" %}
+
+    {% block content %}{% endblock %}
+
+    <script>
+        document.body.addEventListener('htmx:responseError', () => {
+            window.dispatchEvent(new CustomEvent('toast', {
+                detail: { message: 'Request failed. Please try again.', type: 'error' }
+            }));
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

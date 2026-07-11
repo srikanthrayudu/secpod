@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - QualityHub{% endblock %}
+
+{% block content %}
+<div class="flex h-screen overflow-hidden bg-slate-950 text-slate-100" x-data="{ mobileMenuOpen: false }">
+
+    {% include "components/sidebar.html" %}
+
+    <div x-show="mobileMenuOpen" class="fixed inset-0 z-40 flex md:hidden" x-ref="dialog" role="dialog"
+        aria-modal="true" style="display: none;">
+        <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm" @click="mobileMenuOpen = false"></div>
+        <div class="relative flex w-full max-w-xs flex-1 flex-col bg-slate-900 border-r border-slate-800 p-6">
+            <div class="flex items-center justify-between mb-8">
+                <span class="text-xl font-bold bg-gradient-to-r from-brand-400 via-fuchsia-400 to-indigo-400 bg-clip-text text-transparent">QualityHub</span>
+                <button @click="mobileMenuOpen = false" class="text-slate-400 hover:text-slate-200">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <nav class="space-y-2">
+                <a href="/dashboard" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold bg-brand-500/10 text-brand-300">Overview</a>
+                <a href="/dashboard/releases" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-400">Releases</a>
+                <a href="/dashboard/test-cases" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-400">Test Cases</a>
+                <a href="/dashboard/ai" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-400">AI Playground</a>
+                <a href="/logout" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-rose-400">Log Out</a>
+            </nav>
+        </div>
+    </div>
+
+    <div class="flex-1 flex flex-col overflow-hidden">
+        {% include "components/navbar.html" %}
+
+        <main class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
+            <div class="relative overflow-hidden p-6 rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 border border-slate-800/80">
+                <div class="absolute -right-20 -top-20 w-80 h-80 bg-brand-500/10 rounded-full blur-[96px]"></div>
+                <h1 class="text-2xl md:text-3xl font-extrabold text-slate-100">Welcome back, {{ user.full_name or 'QA Engineer' }}</h1>
+                <p class="mt-2 text-sm text-slate-400 max-w-xl">Track test coverage, triage defects, and monitor release readiness across SecPod's product suite.</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4" id="stats-container">
+                <a href="/dashboard/test-cases"
+                    class="p-5 rounded-2xl bg-slate-900 border border-slate-800/60 shadow-md hover:border-brand-700/50 transition-colors group">
+                    <div class="flex items-center justify-between text-slate-500">
+                        <span class="text-xs font-semibold uppercase tracking-wider">Test Cases</span>
+                        <svg class="h-5 w-5 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                    <p class="mt-3 text-3xl font-bold tracking-tight">{{ stats.test_cases }}</p>
+                    <span class="block mt-1 text-[10px] text-brand-400 font-medium group-hover:text-brand-300">View all →</span>
+                </a>
+
+                <a href="/dashboard/test-runs"
+                    class="p-5 rounded-2xl bg-slate-900 border border-slate-800/60 shadow-md hover:border-fuchsia-700/50 transition-colors group">
+                    <div class="flex items-center justify-between text-slate-500">
+                        <span class="text-xs font-semibold uppercase tracking-wider">Total Runs</span>
+                        <svg class="h-5 w-5 text-fuchsia-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <p class="mt-3 text-3xl font-bold tracking-tight">{{ stats.total_runs }}</p>
+                    <span class="block mt-1 text-[10px] text-fuchsia-400 font-medium">{{ stats.pass_rate }}% pass rate</span>
+                </a>
+
+                <a href="/dashboard/defects?status=open"
+                    class="p-5 rounded-2xl bg-slate-900 border border-slate-800/60 shadow-md hover:border-rose-700/50 transition-colors group">
+                    <div class="flex items-center justify-between text-slate-500">
+                        <span class="text-xs font-semibold uppercase tracking-wider">Open Defects</span>
+                        <svg class="h-5 w-5 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                        </svg>
+                    </div>
+                    <p class="mt-3 text-3xl font-bold tracking-tight {% if stats.open_defects > 0 %}text-rose-400{% else %}text-emerald-400{% endif %}">
+                        {{ stats.open_defects }}
+                    </p>
+                    <span class="block mt-1 text-[10px] {% if stats.open_defects > 0 %}text-rose-400{% else %}text-emerald-400{% endif %} font-medium">Needs triage</span>
+                </a>
+
+                <a href="/dashboard/releases"
+                    class="p-5 rounded-2xl bg-slate-900 border border-slate-800/60 shadow-md hover:border-sky-700/50 transition-colors group">
+                    <div class="flex items-center justify-between text-slate-500">
+                        <span class="text-xs font-semibold uppercase tracking-wider">Active Releases</span>
+                        <svg class="h-5 w-5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                    </div>
+                    <p class="mt-3 text-3xl font-bold tracking-tight">{{ stats.active_releases }}</p>
+                    <span class="block mt-1 text-[10px] text-sky-400 font-medium">Planned or in progress</span>
+                </a>
+
+                <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800/60 shadow-md" id="total-users-stat">
+                    <div class="flex items-center justify-between text-slate-500">
+                        <span class="text-xs font-semibold uppercase tracking-wider">Team Members</span>
+                        <svg class="h-5 w-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                    </div>
+                    <p class="mt-3 text-3xl font-bold tracking-tight">{{ stats.total_users }}</p>
+                    <span class="block mt-1 text-[10px] text-emerald-400 font-medium">Active accounts</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-slate-900/60 p-6 rounded-2xl border border-slate-800/50">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-slate-200">Recent Test Runs</h3>
+                        <a href="/dashboard/test-runs" class="text-xs text-brand-400 hover:text-brand-300">View all →</a>
+                    </div>
+                    {% if recent_runs %}
+                    <ul class="space-y-3">
+                        {% for run in recent_runs %}
+                        <li>
+                            <a href="/dashboard/test-runs/{{ run.id }}" class="flex items-center justify-between p-3 rounded-xl bg-slate-950/50 border border-slate-800/40 hover:border-slate-700/60 transition-colors">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <span class="h-2.5 w-2.5 rounded-full flex-shrink-0
+                                        {% if run.status == 'passed' %}bg-emerald-400
+                                        {% elif run.status == 'failed' %}bg-rose-400
+                                        {% elif run.status == 'blocked' %}bg-amber-400
+                                        {% else %}bg-slate-500{% endif %}"></span>
+                                    <div class="min-w-0">
+                                        <p class="text-sm text-slate-200 truncate">{{ run.status.capitalize() }} · {{ run.source.capitalize() }}</p>
+                                        <p class="text-[10px] text-slate-500">{{ run.created_at.strftime('%b %d, %Y %H:%M') }}</p>
+                                    </div>
+                                </div>
+                                <span class="text-[10px] text-slate-500 uppercase tracking-wider">{{ run.status }}</span>
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-sm text-slate-500">No test runs recorded yet. Execute a test case or ingest automated results via the API.</p>
+                    {% endif %}
+                </div>
+
+                <div class="bg-slate-900/60 p-6 rounded-2xl border border-slate-800/50">
+                    <h3 class="text-lg font-bold text-slate-200 mb-4">Quick Actions</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <a href="/dashboard/test-cases/new" class="p-4 rounded-xl bg-slate-950/50 border border-slate-800/40 hover:border-brand-700/40 transition-colors">
+                            <p class="text-sm font-semibold text-slate-200">Create Test Case</p>
+                            <p class="text-xs text-slate-500 mt-1">Add a manual test with steps and expected results.</p>
+                        </a>
+                        <a href="/dashboard/ai" class="p-4 rounded-xl bg-slate-950/50 border border-slate-800/40 hover:border-brand-700/40 transition-colors">
+                            <p class="text-sm font-semibold text-slate-200">AI Draft Test Case</p>
+                            <p class="text-xs text-slate-500 mt-1">Generate a draft from a plain-language requirement.</p>
+                        </a>
+                        <a href="/dashboard/releases" class="p-4 rounded-xl bg-slate-950/50 border border-slate-800/40 hover:border-brand-700/40 transition-colors">
+                            <p class="text-sm font-semibold text-slate-200">Release Readiness</p>
+                            <p class="text-xs text-slate-500 mt-1">Review coverage and open defects before sign-off.</p>
+                        </a>
+                        <a href="/docs" target="_blank" class="p-4 rounded-xl bg-slate-950/50 border border-slate-800/40 hover:border-brand-700/40 transition-colors">
+                            <p class="text-sm font-semibold text-slate-200">API Documentation</p>
+                            <p class="text-xs text-slate-500 mt-1">Integrate CI pipelines with automated result ingestion.</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

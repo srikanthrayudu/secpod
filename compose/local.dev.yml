@@ -1,0 +1,64 @@
+# --------------------------------------------------------------
+# Local development compose – works with both docker‑compose &
+# podman‑compose.  It uses the same image that CI builds, but
+# mounts the source code so you can edit live.
+# --------------------------------------------------------------
+version: "3.9"
+
+services:
+  # ---- Your app (source‑code mount) ----
+  app:
+    build:
+      context: .
+      dockerfile: containers/development.Containerfile
+    # If you prefer to use the pre‑built image from CI, comment the build:
+    # image: ghcr.io/<ORG>/<REPO>:dev
+    volumes:
+      - ./:/usr/src/app:cached   # mount the repo (adjust path if needed)
+    ports:
+      - "8000:8000"              # expose the app directly for quick testing (matches settings.PORT=8000)
+    env_file:
+      - .env.local               # dev‑only DB/Redis credentials, feature flags, etc.
+    depends_on:
+      - db
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+
+  # ---- PostgreSQL (dev) ----
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pg_data_local:/var/lib/postgresql/data
+
+  # ---- Redis (dev) ----
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data_local:/data
+
+  # ---- Caddy (dev) – serves **localhost** with a self‑signed cert ----
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "8080:80"   # HTTP only locally – you can add 8443:443 if you want HTTPS
+      - "8443:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data_local:/data
+    depends_on:
+      - app
+
+volumes:
+  pg_data_local:
+  redis_data_local:
+  caddy_data_local:

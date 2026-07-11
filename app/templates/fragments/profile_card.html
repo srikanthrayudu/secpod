@@ -1,0 +1,62 @@
+<div x-init="{% if success %}$dispatch('toast', {message: '{{ success }}', type: 'success'}){% endif %}{% if error %}$dispatch('toast', {message: '{{ error }}', type: 'error'}){% endif %}">
+    <div class="flex items-center gap-4 mb-6">
+        <div class="h-16 w-16 rounded-2xl bg-brand-600/20 text-brand-300 border border-brand-500/20 flex items-center justify-center font-bold text-2xl">
+            {{ user.full_name[0] | upper if user.full_name else user.email[0] | upper }}
+        </div>
+        <div>
+            <h2 class="text-lg font-bold text-slate-100">{{ user.full_name or "Anonymous User" }}</h2>
+            <p class="text-xs text-slate-500 font-mono">{{ user.email }}</p>
+        </div>
+    </div>
+
+    <form hx-post="/dashboard/profile"
+          hx-target="#profile-card-wrapper"
+          hx-swap="innerHTML"
+          class="space-y-6">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label for="full_name" class="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Full Name</label>
+                <input type="text" id="full_name" name="full_name" value="{{ user.full_name or '' }}" required placeholder="John Doe"
+                       class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+            </div>
+            <div>
+                <label for="company" class="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Company / Org</label>
+                <input type="text" id="company" name="company" value="{{ user.company or '' }}" placeholder="Acme Inc."
+                       class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+            </div>
+            <div>
+                <label for="location" class="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Location</label>
+                <input type="text" id="location" name="location" value="{{ user.location or '' }}" placeholder="San Francisco, CA"
+                       class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+            </div>
+            <div>
+                <label class="block text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-2">Access Role</label>
+                <input type="text" disabled value="{{ user.role | upper }}"
+                       class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-500 font-mono cursor-not-allowed">
+            </div>
+        </div>
+
+        <div>
+            <label for="bio" class="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Biography</label>
+            <textarea id="bio" name="bio" rows="4" placeholder="Tell us about yourself..."
+                      class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500">{{ user.bio or '' }}</textarea>
+        </div>
+
+        <div class="pt-4 border-t border-slate-800/80">
+            <h3 class="text-xs font-bold text-slate-300 uppercase tracking-widest mb-3">Update Password</h3>
+            <div class="max-w-xs">
+                <label for="profile-password" class="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">New Password</label>
+                <input type="password" id="profile-password" name="password" placeholder="•••••••• (Leave blank to keep)"
+                       class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+            </div>
+        </div>
+
+        <div class="flex justify-end pt-4 border-t border-slate-800/80">
+            <button type="submit"
+                    class="bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs py-2.5 px-6 rounded-xl shadow-md shadow-brand-500/10 transition-all">
+                Save Profile
+            </button>
+        </div>
+    </form>
+</div>

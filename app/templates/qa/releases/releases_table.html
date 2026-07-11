@@ -1,0 +1,44 @@
+{% if releases %}
+<table class="w-full text-sm">
+    <thead class="border-b border-slate-800">
+        <tr class="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <th class="px-5 py-3 text-left">Name</th>
+            <th class="px-5 py-3 text-left">Status</th>
+            <th class="px-5 py-3 text-left">Target Date</th>
+            <th class="px-5 py-3 text-left">Created</th>
+            <th class="px-5 py-3 text-right">Actions</th>
+        </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-800/60">
+        {% for r in releases %}
+        {% set status_style = {
+            'planned': 'bg-slate-700/50 text-slate-300 border-slate-600/50',
+            'in_progress': 'bg-brand-500/20 text-brand-300 border-brand-500/30',
+            'released': 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+            'cancelled': 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+        } %}
+        <tr class="hover:bg-slate-800/30 transition-colors">
+            <td class="px-5 py-3.5 font-semibold text-slate-100">{{ r.name }}</td>
+            <td class="px-5 py-3.5">
+                <span class="px-2 py-0.5 rounded-full border text-xs font-semibold {{ status_style.get(r.status, 'bg-slate-700 text-slate-300') }}">
+                    {{ r.status.replace('_',' ').title() }}
+                </span>
+            </td>
+            <td class="px-5 py-3.5 text-slate-400">{{ r.target_date.strftime('%b %d, %Y') if r.target_date else '—' }}</td>
+            <td class="px-5 py-3.5 text-slate-500">{{ r.created_at.strftime('%b %d, %Y') }}</td>
+            <td class="px-5 py-3.5 text-right">
+                <a href="/dashboard/releases/{{ r.id }}" class="text-brand-400 hover:text-brand-300 text-xs font-semibold transition-colors">
+                    View Readiness →
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="p-12 text-center text-slate-500">
+    <svg class="h-10 w-10 mx-auto mb-3 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+    <p class="font-semibold">No releases yet.</p>
+    <p class="text-xs mt-1">Create your first release to start tracking test coverage.</p>
+</div>
+{% endif %}

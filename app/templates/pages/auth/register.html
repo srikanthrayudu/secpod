@@ -1,0 +1,41 @@
+{% extends "layouts/auth.html" %}
+
+{% block title %}Register — QualityHub{% endblock %}
+
+{% block auth_content %}
+<h2 class="text-2xl font-bold text-slate-100 mb-6">Create Account</h2>
+
+{% if error %}
+<div class="mb-4 p-3 bg-rose-950/80 border border-rose-500/30 rounded-xl text-xs text-rose-300 flex items-center gap-2">
+    <svg class="h-4 w-4 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+    {{ error }}
+</div>
+{% endif %}
+
+<form action="/register" method="POST" class="space-y-5">
+    <div>
+        <label for="full_name" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Full Name</label>
+        <input type="text" id="full_name" name="full_name" required placeholder="John Doe"
+               class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all">
+    </div>
+    <div>
+        <label for="email" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Email Address</label>
+        <input type="email" id="email" name="email" required placeholder="name@domain.com"
+               class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all">
+    </div>
+    <div>
+        <label for="password" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Password</label>
+        <input type="password" id="password" name="password" required placeholder="•••••••• (Min 6 chars)"
+               class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all">
+    </div>
+    <button type="submit"
+            class="w-full bg-gradient-to-r from-brand-600 to-fuchsia-600 hover:from-brand-500 hover:to-fuchsia-500 text-white text-sm font-semibold py-3 px-4 rounded-xl shadow-lg shadow-brand-500/20 hover:shadow-brand-500/30 transition-all duration-200">
+        Sign Up
+    </button>
+</form>
+
+<div class="mt-6 text-center text-xs text-slate-500">
+    Already have an account?
+    <a href="/login" class="text-brand-400 hover:text-brand-300 transition-colors font-medium">Log in</a>
+</div>
+{% endblock %}

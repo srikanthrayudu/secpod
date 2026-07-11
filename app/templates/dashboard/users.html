@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}User Management - QualityHub{% endblock %}
+
+{% block content %}
+<div class="flex h-screen overflow-hidden bg-slate-950 text-slate-100" x-data="{ mobileMenuOpen: false, editModalOpen: false }">
+    
+    <!-- Sidebar -->
+    {% include "components/sidebar.html" %}
+    
+    <!-- Mobile Sidebar Drawer -->
+    <div x-show="mobileMenuOpen" class="fixed inset-0 z-40 flex md:hidden" style="display: none;">
+        <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm" @click="mobileMenuOpen = false"></div>
+        <div class="relative flex w-full max-w-xs flex-1 flex-col bg-slate-900 border-r border-slate-800 p-6">
+            <div class="flex items-center justify-between mb-8">
+                <span class="text-xl font-bold bg-gradient-to-r from-brand-400 via-fuchsia-400 to-indigo-400 bg-clip-text text-transparent">QualityHub</span>
+                <button @click="mobileMenuOpen = false" class="text-slate-400 hover:text-slate-200">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <nav class="space-y-2">
+                <a href="/dashboard" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-400">Overview</a>
+                <a href="/dashboard/ai" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-400">AI Assistant</a>
+                <a href="/dashboard/users" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold bg-brand-500/10 text-brand-300">Users Admin</a>
+                <a href="/dashboard/profile" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-400">My Profile</a>
+                <a href="/logout" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-rose-400">Log Out</a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Main Workspace Container -->
+    <div class="flex-1 flex flex-col overflow-hidden" @user-updated.window="editModalOpen = false; hxTriggerRefresh()">
+        <!-- Top Nav -->
+        {% include "components/navbar.html" %}
+
+        <!-- Content Area -->
+        <main class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-100">User Directory</h1>
+                    <p class="text-xs text-slate-400 mt-1">Manage accounts, verify status, and assign user access permissions.</p>
+                </div>
+            </div>
+
+            <!-- Controls (Search, Filters) -->
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800/80 flex flex-col sm:flex-row items-center gap-4 justify-between">
+                
+                <!-- Search input (HTMX throttled keyup) -->
+                <div class="relative w-full sm:max-w-xs">
+                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </span>
+                    <input type="text" id="search-input" name="search" placeholder="Search by name, email..." value="{{ search }}"
+                           hx-get="/dashboard/users"
+                           hx-trigger="keyup changed delay:300ms, search"
+                           hx-target="#users-table"
+                           hx-include="#role-filter, #sort-select"
+                           hx-push-url="true"
+                           hx-sync="this:replace"
+                           hx-indicator="#search-indicator"
+                           class="w-full bg-slate-950 border border-slate-800/80 rounded-lg pl-10 pr-4 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500">
+                    <span id="search-indicator" class="htmx-indicator absolute right-3 top-2.5">
+                        <svg class="animate-spin h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                    </span>
+                </div>
+
+                <div class="flex items-center gap-3 w-full sm:w-auto">
+                    <!-- Filter Role -->
+                    <select id="role-filter" name="role"
+                            hx-get="/dashboard/users"
+                            hx-trigger="change"
+                            hx-target="#users-table"
+                            hx-include="#search-input, #sort-select"
+                            hx-push-url="true"
+                            hx-sync="#search-input:replace"
+                            class="bg-slate-950 border border-slate-800/80 rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-brand-500 w-full sm:w-auto">
+                        <option value="">All Roles</option>
+                        <option value="user" {% if role == 'user' %}selected{% endif %}>User</option>
+                        <option value="admin" {% if role == 'admin' %}selected{% endif %}>Admin</option>
+                    </select>
+
+                    <!-- Sorting options -->
+                    <select id="sort-select" name="sort_by"
+                            hx-get="/dashboard/users"
+                            hx-trigger="change"
+                            hx-target="#users-table"
+                            hx-include="#search-input, #role-filter"
+                            hx-push-url="true"
+                            hx-sync="#search-input:replace"
+                            class="bg-slate-950 border border-slate-800/80 rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-brand-500 w-full sm:w-auto">
+                        <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Sort: Created At</option>
+                        <option value="email" {% if sort_by == 'email' %}selected{% endif %}>Sort: Email</option>
+                        <option value="full_name" {% if sort_by == 'full_name' %}selected{% endif %}>Sort: Name</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Table Container (Replaced by HTMX) -->
+            <div id="users-table" class="overflow-x-auto rounded-xl border border-slate-800/60 bg-slate-900/40" aria-live="polite" aria-atomic="true">
+                {% include "dashboard/users_table.html" %}
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal backdrop & container wrapper using AlpineJS -->
+    <div x-show="editModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm" @click="editModalOpen = false"></div>
+        
+        <!-- Modal Content Mount -->
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl max-w-md w-full z-10" id="modal-container">
+            <!-- Dynamically populated by HTMX -->
+        </div>
+    </div>
+</div>
+
+<script>
+    function hxTriggerRefresh() {
+        // Trigger htmx reload on table container
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            htmx.trigger(searchInput, 'search');
+        }
+    }
+    
+    // Add custom listener for trigger events from headers
+    document.body.addEventListener('userUpdated', () => {
+        window.dispatchEvent(new CustomEvent('toast', {
+            detail: { message: 'User updated successfully!', type: 'success' }
+        }));
+        hxTriggerRefresh();
+    });
+</script>
+{% endblock %}

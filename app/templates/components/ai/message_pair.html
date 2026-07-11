@@ -1,0 +1,30 @@
+<!-- User bubble -->
+<div class="flex items-start gap-4 justify-end">
+    <div class="space-y-1 max-w-[80%]">
+        <div class="text-[10px] text-right font-semibold text-slate-500 uppercase tracking-widest">You</div>
+        <div class="p-4 bg-brand-600/10 border border-brand-500/20 text-xs rounded-2xl text-slate-200">
+            {{ prompt }}
+        </div>
+    </div>
+    <div class="h-8 w-8 rounded-xl bg-brand-600/20 text-brand-300 flex items-center justify-center font-bold text-xs shrink-0 border border-brand-500/20">
+        {{ user.full_name[0] | upper if user.full_name else user.email[0] | upper }}
+    </div>
+</div>
+
+<!-- AI loading bubble — replaced by the actual response via HTMX -->
+<div class="flex items-start gap-4 justify-start"
+     hx-get="/dashboard/ai/response/{{ message_id }}?prompt={{ prompt | urlencode }}"
+     hx-trigger="load"
+     hx-swap="outerHTML"
+     hx-on::after-settle="scrollChatDown()">
+    <div class="h-8 w-8 rounded-xl bg-slate-900 border border-slate-800 text-fuchsia-400 flex items-center justify-center font-bold text-xs shrink-0 shadow shadow-fuchsia-500/5">
+        AI
+    </div>
+    <div class="space-y-1 max-w-[80%]">
+        <div class="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">QualityHub AI</div>
+        <div class="p-4 bg-slate-900 border border-slate-800/80 rounded-2xl text-xs text-slate-400 flex items-center gap-2">
+            <svg class="animate-spin h-3.5 w-3.5 text-fuchsia-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+            Thinking...
+        </div>
+    </div>
+</div>

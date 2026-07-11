@@ -1,0 +1,9 @@
+version: "3.9"
+services:
+  app:
+    build:
+      context: .
+      dockerfile: containers/development.Containerfile
+    image: ghcr.io/${{ env.IMAGE_ORG }}/${{ env.IMAGE_NAME }}:staging-${{ env.IMAGE_TAG }}
+    env_file:
+      - .env.staging

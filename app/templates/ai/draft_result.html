@@ -1,0 +1,26 @@
+<div class="bg-slate-900 border border-slate-800/60 rounded-2xl p-6 space-y-4">
+    {% if error %}
+    <p class="text-sm text-rose-400">{{ error }}</p>
+    {% elif draft %}
+    <div class="flex items-center justify-between">
+        <h3 class="text-sm font-bold text-slate-300">Draft Result</h3>
+        <a href="/dashboard/test-cases/new?requirement={{ requirement_text | urlencode }}"
+           class="text-xs text-brand-400 hover:text-brand-300 font-semibold">
+            Save as Test Case →
+        </a>
+    </div>
+    <div>
+        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Steps</p>
+        <ol class="space-y-2 list-decimal list-inside text-sm text-slate-300">
+            {% for step in draft.draft_steps %}
+            <li class="pl-2">{{ step }}</li>
+            {% endfor %}
+        </ol>
+    </div>
+    <div>
+        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Expected Result</p>
+        <p class="text-sm text-slate-400">{{ draft.expected_result }}</p>
+    </div>
+    <p class="text-[10px] text-slate-600">AI-generated drafts must be reviewed before saving to the official test suite.</p>
+    {% endif %}
+</div>

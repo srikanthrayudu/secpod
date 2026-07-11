@@ -1,0 +1,35 @@
+<div class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-sm w-full">
+    <template x-for="toast in toasts" :key="toast.id">
+        <div x-data="{ show: false }"
+             x-init="setTimeout(() => show = true, 50); setTimeout(() => { show = false; setTimeout(() => toasts = toasts.filter(t => t.id !== toast.id), 300) }, 4000)"
+             x-show="show"
+             x-transition:enter="transition ease-out duration-300 transform"
+             x-transition:enter-start="translate-y-2 opacity-0 scale-95"
+             x-transition:enter-end="translate-y-0 opacity-100 scale-100"
+             x-transition:leave="transition ease-in duration-200 transform"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95"
+             class="p-4 rounded-xl border shadow-xl pointer-events-auto backdrop-blur-md flex items-center justify-between"
+             :class="{
+                 'bg-emerald-950/80 border-emerald-500/30 text-emerald-200': toast.type === 'success',
+                 'bg-rose-950/80 border-rose-500/30 text-rose-200': toast.type === 'error',
+                 'bg-brand-950/80 border-brand-500/30 text-brand-200': toast.type === 'info'
+             }">
+            <div class="flex items-center gap-3">
+                <template x-if="toast.type === 'success'">
+                    <svg class="h-5 w-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </template>
+                <template x-if="toast.type === 'error'">
+                    <svg class="h-5 w-5 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </template>
+                <template x-if="toast.type === 'info'">
+                    <svg class="h-5 w-5 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </template>
+                <span class="text-sm font-medium" x-text="toast.message"></span>
+            </div>
+            <button @click="show = false; setTimeout(() => toasts = toasts.filter(t => t.id !== toast.id), 300)" class="ml-4 hover:opacity-80 transition-opacity">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+    </template>
+</div>

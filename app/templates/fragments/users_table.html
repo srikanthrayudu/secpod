@@ -1,0 +1,109 @@
+<table class="min-w-full divide-y divide-slate-800/80">
+    <thead class="bg-slate-900/60">
+        <tr>
+            <th scope="col" class="px-6 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">User Details</th>
+            <th scope="col" class="px-6 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Access Role</th>
+            <th scope="col" class="px-6 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Account States</th>
+            <th scope="col" class="px-6 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Created</th>
+            <th scope="col" class="relative px-6 py-3.5 text-right text-xs font-semibold text-slate-400 uppercase">Actions</th>
+        </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-800/40 bg-slate-950/20">
+        {% for u in users %}
+        <tr class="hover:bg-slate-900/20 transition-colors" id="user-row-{{ u.id }}">
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center gap-3">
+                    <div class="h-9 w-9 rounded-full bg-slate-800/80 text-brand-300 flex items-center justify-center font-bold text-sm border border-slate-700/50">
+                        {{ u.full_name[0] | upper if u.full_name else u.email[0] | upper }}
+                    </div>
+                    <div>
+                        <div class="text-sm font-semibold text-slate-200">{{ u.full_name or 'N/A' }}</div>
+                        <div class="text-xs text-slate-500">{{ u.email }}</div>
+                    </div>
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                {% if u.role == 'admin' %}
+                <span class="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30">Admin</span>
+                {% else %}
+                <span class="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-slate-800 text-slate-400 border border-slate-700">User</span>
+                {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-xs space-x-1">
+                {% if u.is_active %}
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-500/20">Active</span>
+                {% else %}
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-950 text-rose-300 border border-rose-500/20">Suspended</span>
+                {% endif %}
+                {% if u.is_verified %}
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-950 text-sky-300 border border-sky-500/20">Verified</span>
+                {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-xs text-slate-400">
+                {{ u.created_at.strftime('%Y-%m-%d') if u.created_at else 'N/A' }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-xs font-medium space-x-2">
+                <button hx-get="/dashboard/users/{{ u.id }}/edit"
+                        hx-target="#modal-container"
+                        hx-indicator="#edit-indicator-{{ u.id }}"
+                        hx-disabled-elt="this"
+                        @click="editModalOpen = true"
+                        class="inline-flex items-center gap-1.5 text-brand-400 hover:text-brand-300 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span id="edit-indicator-{{ u.id }}" class="htmx-indicator">
+                        <svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                    </span>
+                    Edit
+                </button>
+
+                {% if u.id != user.id %}
+                <button hx-delete="/dashboard/users/{{ u.id }}"
+                        hx-confirm="Are you sure you want to delete user '{{ u.email }}'?"
+                        hx-target="#user-row-{{ u.id }}"
+                        hx-swap="outerHTML swap:300ms"
+                        hx-indicator="#delete-indicator-{{ u.id }}"
+                        hx-disabled-elt="this"
+                        class="inline-flex items-center gap-1.5 text-rose-400 hover:text-rose-300 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span id="delete-indicator-{{ u.id }}" class="htmx-indicator">
+                        <svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                    </span>
+                    Delete
+                </button>
+                {% endif %}
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="5" class="px-6 py-12 text-center text-slate-500">
+                <svg class="mx-auto h-8 w-8 text-slate-600 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span class="text-sm font-semibold">No users matching search filters found</span>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Pagination Footer -->
+<div class="px-6 py-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400 bg-slate-900/20">
+    <div>
+        Showing <span class="font-semibold text-slate-300">{{ users | length }}</span> of <span class="font-semibold text-slate-300">{{ total_count }}</span> entries
+    </div>
+    <div class="flex items-center gap-1.5">
+        <button hx-get="/dashboard/users"
+                hx-include="#search-input, #role-filter, #sort-select"
+                hx-target="#users-table"
+                hx-push-url="true"
+                name="skip" value="{{ [skip - limit, 0] | max }}"
+                {% if skip == 0 %}disabled class="px-3 py-1.5 rounded-lg border border-slate-800/80 text-slate-700 cursor-not-allowed"{% else %}class="px-3 py-1.5 rounded-lg border border-slate-800/80 text-slate-300 hover:bg-slate-800 transition-colors"{% endif %}>
+            Prev
+        </button>
+        <span class="px-3 py-1.5 text-slate-300 font-semibold">Page {{ page }} of {{ total_pages or 1 }}</span>
+        <button hx-get="/dashboard/users"
+                hx-include="#search-input, #role-filter, #sort-select"
+                hx-target="#users-table"
+                hx-push-url="true"
+                name="skip" value="{{ skip + limit }}"
+                {% if page >= total_pages %}disabled class="px-3 py-1.5 rounded-lg border border-slate-800/80 text-slate-700 cursor-not-allowed"{% else %}class="px-3 py-1.5 rounded-lg border border-slate-800/80 text-slate-300 hover:bg-slate-800 transition-colors"{% endif %}>
+            Next
+        </button>
+    </div>
+</div>

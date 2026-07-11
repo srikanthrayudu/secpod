@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}{{ defect.title }} - Defect - QualityHub{% endblock %}
+{% block content %}
+<div class="flex h-screen overflow-hidden bg-slate-950 text-slate-100">
+    {% include "components/sidebar.html" %}
+    <div class="flex-1 flex flex-col overflow-hidden">
+        {% include "components/navbar.html" %}
+        <main class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
+            <div>
+                <a href="/dashboard/defects" class="text-xs text-slate-500 hover:text-brand-400">← Back to Defects</a>
+                <div class="mt-2 flex items-center gap-3 flex-wrap">
+                    <h1 class="text-xl font-extrabold text-slate-100">{{ defect.title }}</h1>
+                    {% set sev_style = {
+                        'critical': 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+                        'high': 'bg-orange-500/20 text-orange-300 border-orange-500/30',
+                        'medium': 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+                        'low': 'bg-slate-600/40 text-slate-400 border-slate-600/40'
+                    } %}
+                    {% set stat_style = {
+                        'open': 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+                        'triaged': 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+                        'fixed': 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+                        'verified': 'bg-sky-500/20 text-sky-300 border-sky-500/30',
+                        'closed': 'bg-slate-600/40 text-slate-400 border-slate-600/40'
+                    } %}
+                    <span class="px-2 py-0.5 text-xs font-semibold rounded-full border {{ sev_style.get(defect.severity, 'bg-slate-700 text-slate-300') }}">
+                        {{ defect.severity.capitalize() if defect.severity else '—' }}
+                    </span>
+                    <span id="defect-status-badge" class="px-2 py-0.5 text-xs font-semibold rounded-full border {{ stat_style.get(defect.status, 'bg-slate-700 text-slate-300') }}">
+                        {{ defect.status.capitalize() }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Description -->
+                <div class="lg:col-span-2 bg-slate-900 border border-slate-800/60 rounded-2xl p-5">
+                    <h2 class="text-sm font-bold text-slate-300 mb-3">Description</h2>
+                    <pre class="text-sm text-slate-400 font-sans whitespace-pre-wrap leading-relaxed">{{ defect.description or 'No description provided.' }}</pre>
+                </div>
+
+                <!-- Meta + Actions -->
+                <div class="space-y-4">
+                    <div class="bg-slate-900 border border-slate-800/60 rounded-2xl p-5 space-y-3">
+                        <h2 class="text-sm font-bold text-slate-300">Details</h2>
+                        <div class="flex justify-between text-xs"><span class="text-slate-500">Reported</span><span class="text-slate-300">{{ defect.created_at.strftime('%b %d, %Y') }}</span></div>
+                        {% if defect.resolved_at %}
+                        <div class="flex justify-between text-xs"><span class="text-slate-500">Resolved</span><span class="text-emerald-400">{{ defect.resolved_at.strftime('%b %d, %Y') }}</span></div>
+                        {% endif %}
+                        {% if defect.test_run_id %}
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-500">Test Run</span>
+                            <a href="/dashboard/test-runs/{{ defect.test_run_id }}" class="text-brand-400 hover:text-brand-300">View Run →</a>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if user.role in ['qa_lead', 'admin'] %}
+                    <div class="bg-slate-900 border border-slate-800/60 rounded-2xl p-5">
+                        <h2 class="text-sm font-bold text-slate-300 mb-3">Update Status</h2>
+                        <form hx-post="/dashboard/defects/{{ defect.id }}/status"
+                              hx-target="#defect-status-badge"
+                              hx-swap="outerHTML"
+                              class="space-y-3">
+                            <select name="new_status" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-brand-500">
+                                <option value="open" {% if defect.status == 'open' %}selected{% endif %}>Open</option>
+                                <option value="triaged" {% if defect.status == 'triaged' %}selected{% endif %}>Triaged</option>
+                                <option value="fixed" {% if defect.status == 'fixed' %}selected{% endif %}>Fixed</option>
+                                <option value="verified" {% if defect.status == 'verified' %}selected{% endif %}>Verified</option>
+                                <option value="closed" {% if defect.status == 'closed' %}selected{% endif %}>Closed</option>
+                            </select>
+                            <button type="submit" class="w-full py-2 bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold rounded-xl transition-colors">
+                                Update Status
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

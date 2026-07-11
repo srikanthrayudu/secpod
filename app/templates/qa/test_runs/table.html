@@ -1,0 +1,42 @@
+{% if runs %}
+<table class="w-full text-sm">
+    <thead class="border-b border-slate-800">
+        <tr class="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <th class="px-5 py-3 text-left">Status</th>
+            <th class="px-5 py-3 text-left">Source</th>
+            <th class="px-5 py-3 text-left">Duration</th>
+            <th class="px-5 py-3 text-left">Ran At</th>
+            <th class="px-5 py-3 text-right">Actions</th>
+        </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-800/60">
+        {% for run in runs %}
+        {% set s_style = {
+            'passed': 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+            'failed': 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+            'skipped': 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+            'blocked': 'bg-orange-500/20 text-orange-300 border-orange-500/30'
+        } %}
+        <tr class="hover:bg-slate-800/30 transition-colors">
+            <td class="px-5 py-3.5">
+                <span class="px-2 py-0.5 rounded-full border text-xs font-semibold {{ s_style.get(run.status, 'bg-slate-700 text-slate-300') }}">
+                    {{ run.status.capitalize() }}
+                </span>
+            </td>
+            <td class="px-5 py-3.5 text-slate-400">{{ run.source.capitalize() if run.source else '—' }}</td>
+            <td class="px-5 py-3.5 text-slate-400">{{ run.duration_ms }}ms</td>
+            <td class="px-5 py-3.5 text-slate-500">{{ run.created_at.strftime('%b %d, %Y %H:%M') }}</td>
+            <td class="px-5 py-3.5 text-right">
+                <a href="/dashboard/test-runs/{{ run.id }}" class="text-brand-400 hover:text-brand-300 text-xs font-semibold transition-colors">Details →</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="p-12 text-center text-slate-500">
+    <svg class="h-10 w-10 mx-auto mb-3 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    <p class="font-semibold">No test runs found.</p>
+    <p class="text-xs mt-1">Try adjusting your filters or submit results via the API.</p>
+</div>
+{% endif %}

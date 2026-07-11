@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Access Denied - QualityHub{% endblock %}
+
+{% block content %}
+<div class="flex h-screen overflow-hidden bg-slate-950 text-slate-100" x-data="{ mobileMenuOpen: false }">
+    <!-- Sidebar -->
+    {% include "components/sidebar.html" %}
+    
+    <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- Top Nav -->
+        {% include "components/navbar.html" %}
+
+        <!-- Error Layout -->
+        <main class="flex-1 flex items-center justify-center p-6 text-center">
+            <div class="max-w-md bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-xl">
+                <div class="h-12 w-12 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                </div>
+                <h2 class="text-xl font-bold text-slate-100 mb-2">Access Denied</h2>
+                <p class="text-sm text-slate-400 mb-6">{{ message or "You do not have permission to access this page." }}</p>
+                <a href="/dashboard" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-xs font-semibold rounded-xl text-white shadow-md shadow-brand-500/10 hover:shadow-brand-500/20 transition-all inline-block">
+                    Return to Overview
+                </a>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

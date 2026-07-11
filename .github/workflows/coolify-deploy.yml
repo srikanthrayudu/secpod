@@ -1,0 +1,160 @@
+name: CI/CD – Build & Deploy to Coolify (Podman)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  COOLIFY_API_URL: ${{ secrets.COOLIFY_API_URL }}
+  COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    outputs:
+      dev-tag: ${{ steps.tag.outputs.dev-tag }}
+      staging-tag: ${{ steps.tag.outputs.staging-tag }}
+      prod-tag: ${{ steps.tag.outputs.prod-tag }}
+      image_name: ${{ steps.lowercase.outputs.image_name }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Force repository name to lowercase so GHCR doesn't throw errors
+      - name: Convert repository to lowercase
+        id: lowercase
+        run: |
+          echo "image_name=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      # Extract the 8-character short SHA
+      - name: Set Short SHA
+        run: echo "SHA_SHORT=$(echo ${{ github.sha }} | cut -c1-8)" >> $GITHUB_ENV
+
+      # Log in to GHCR using Podman
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+
+      # Build Dev via Podman
+      - name: Build dev image
+        run: |
+          podman build -t ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.image_name }}:dev -f Dockerfile .
+
+      # Build Staging Containerfile via Podman
+      - name: Build staging image
+        run: |
+          podman build -t ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.image_name }}:staging-${{ env.SHA_SHORT }} -f containers/development.Containerfile .
+
+      # Build Production Containerfile via Podman
+      - name: Build production image
+        run: |
+          podman build -t ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.image_name }}:prod-${{ env.SHA_SHORT }} -f containers/production.Containerfile .
+
+      # Push all images using Podman
+      - name: Push all images
+        run: |
+          for tag in dev staging-${{ env.SHA_SHORT }} prod-${{ env.SHA_SHORT }}; do
+            podman push ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.image_name }}:$tag
+          done
+
+      - name: Output tags for downstream jobs
+        id: tag
+        run: |
+          echo "dev-tag=dev" >> $GITHUB_OUTPUT
+          echo "staging-tag=staging-${{ env.SHA_SHORT }}" >> $GITHUB_OUTPUT
+          echo "prod-tag=prod-${{ env.SHA_SHORT }}" >> $GITHUB_OUTPUT
+
+  deploy-staging:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Coolify staging deployment
+        env:
+          API_URL: ${{ env.COOLIFY_API_URL }}
+          API_TOKEN: ${{ env.COOLIFY_TOKEN }}
+        run: |
+          trigger() {
+            local project_id=$1
+            local payload='{"type":"deployment","deployment":{"id":null,"project_id":'$project_id'}}'
+            curl -s -X POST "${API_URL}/projects/${project_id}/deployments" \
+                 -H "Authorization: Bearer ${API_TOKEN}" \
+                 -H "Content-Type: application/json" \
+                 -d "${payload}"
+          }
+
+          PROJECT_ID=$(curl -s -H "Authorization: Bearer ${API_TOKEN}" "${API_URL}/projects" \
+                       | jq -r ".data[] | select(.name==\"${{ github.repository }}-staging\") | .id")
+
+          if [ -z "$PROJECT_ID" ]; then
+            echo "::error ::Could not find Coolify staging project"
+            exit 1
+          fi
+
+          echo "✅ Staging project ID: $PROJECT_ID"
+          echo "🚀 Triggering staging deployment (image tag: ${{ needs.build-and-push.outputs.staging-tag }})"
+          trigger "$PROJECT_ID"
+          echo "✅ Staging deployment triggered!"
+
+  deploy-production:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Coolify production deployment
+        env:
+          API_URL: ${{ env.COOLIFY_API_URL }}
+          API_TOKEN: ${{ env.COOLIFY_TOKEN }}
+        run: |
+          trigger() {
+            local project_id=$1
+            local payload='{"type":"deployment","deployment":{"id":null,"project_id":'$project_id'}}'
+            curl -s -X POST "${API_URL}/projects/${project_id}/deployments" \
+                 -H "Authorization: Bearer ${API_TOKEN}" \
+                 -H "Content-Type: application/json" \
+                 -d "${payload}"
+          }
+
+          PROJECT_ID=$(curl -s -H "Authorization: Bearer ${API_TOKEN}" "${API_URL}/projects" \
+                       | jq -r ".data[] | select(.name==\"${{ github.repository }}-prod\") | .id")
+
+          if [ -z "$PROJECT_ID" ]; then
+            echo "::error ::Could not find Coolify production project"
+            exit 1
+          fi
+
+          echo "✅ Production project ID: $PROJECT_ID"
+          echo "🚀 Triggering production deployment (image tag: ${{ needs.build-and-push.outputs.prod-tag }})"
+          trigger "$PROJECT_ID"
+          echo "✅ Production deployment triggered!"
+
+  verify:
+    needs: [deploy-staging, deploy-production]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for staging health endpoint
+        run: |
+          for i in {1..12}; do
+            if curl -k -sSf https://staging.myapp.example.com/health > /dev/null; then
+              echo "✅ Staging healthy"
+              exit 0
+            fi
+            echo "⏳ Waiting for staging… ($i/12)"
+            sleep 10
+          done
+          echo "::error ::Staging health check failed"
+          exit 1
+
+      - name: Wait for production health endpoint
+        run: |
+          for i in {1..12}; do
+            if curl -k -sSf https://myapp.example.com/health > /dev/null; then
+              echo "✅ Production healthy"
+              exit 0
+            fi
+            echo "⏳ Waiting for production… ($i/12)"
+            sleep 10
+          done
+          echo "::error ::Production health check failed"
+          exit 1

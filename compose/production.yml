@@ -1,0 +1,9 @@
+version: "3.9"
+services:
+  app:
+    build:
+      context: .
+      dockerfile: containers/production.Containerfile
+    image: ghcr.io/${{ env.IMAGE_ORG }}/${{ env.IMAGE_NAME }}:prod-${{ env.IMAGE_TAG }}
+    env_file:
+      - .env.production

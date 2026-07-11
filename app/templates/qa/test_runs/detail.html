@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Test Run Detail - QualityHub{% endblock %}
+{% block content %}
+<div class="flex h-screen overflow-hidden bg-slate-950 text-slate-100">
+    {% include "components/sidebar.html" %}
+    <div class="flex-1 flex flex-col overflow-hidden">
+        {% include "components/navbar.html" %}
+        <main class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
+            <div>
+                <a href="/dashboard/test-runs" class="text-xs text-slate-500 hover:text-brand-400">← Back to Test Runs</a>
+                <div class="mt-2 flex items-center gap-3 flex-wrap">
+                    <h1 class="text-xl font-extrabold text-slate-100">Test Run Details</h1>
+                    {% set s_style = {
+                        'passed': 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+                        'failed': 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+                        'skipped': 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+                        'blocked': 'bg-orange-500/20 text-orange-300 border-orange-500/30'
+                    } %}
+                    <span class="px-2 py-0.5 text-xs font-semibold rounded-full border {{ s_style.get(run.status, 'bg-slate-700 text-slate-300') }}">
+                        {{ run.status.capitalize() }}
+                    </span>
+                </div>
+                <p class="text-sm text-slate-500 mt-1">Source: <span class="text-slate-300">{{ run.source.capitalize() }}</span> &bull; Duration: <span class="text-slate-300">{{ run.duration_ms }}ms</span></p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Logs -->
+                <div class="bg-slate-900 border border-slate-800/60 rounded-2xl p-5">
+                    <h2 class="text-sm font-bold text-slate-300 mb-3">Execution Logs</h2>
+                    {% if run.logs %}
+                    <pre class="text-xs text-slate-400 font-mono bg-slate-950/60 rounded-xl p-4 overflow-auto max-h-60 whitespace-pre-wrap">{{ run.logs }}</pre>
+                    {% else %}
+                    <p class="text-sm text-slate-500">No logs recorded.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Linked Defects -->
+                <div class="bg-slate-900 border border-slate-800/60 rounded-2xl p-5">
+                    <h2 class="text-sm font-bold text-slate-300 mb-3">Linked Defects ({{ defects|length }})</h2>
+                    {% if defects %}
+                    <ul class="space-y-2">
+                        {% for d in defects %}
+                        {% set sev_style = {
+                            'critical': 'text-rose-300',
+                            'high': 'text-orange-300',
+                            'medium': 'text-amber-300',
+                            'low': 'text-slate-400'
+                        } %}
+                        <li class="flex items-center justify-between text-sm">
+                            <a href="/dashboard/defects/{{ d.id }}" class="text-slate-200 hover:text-brand-400 truncate max-w-[200px]">{{ d.title }}</a>
+                            <span class="text-xs {{ sev_style.get(d.severity, 'text-slate-400') }}">{{ d.severity.capitalize() }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-sm text-slate-500">No linked defects.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Evidence Upload -->
+            <div class="bg-slate-900 border border-slate-800/60 rounded-2xl p-5">
+                <h2 class="text-sm font-bold text-slate-300 mb-3">Upload Evidence</h2>
+                <form action="/api/v1/test-runs/{{ run.id }}/evidence" method="POST" enctype="multipart/form-data" class="flex items-center gap-3">
+                    <input type="file" name="file" accept="image/*,text/plain,.log,application/json" class="text-sm text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-slate-700 file:text-slate-300 hover:file:bg-slate-600">
+                    <button type="submit" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold rounded-xl">Upload</button>
+                </form>
+                <p class="text-xs text-slate-500 mt-2">Allowed: PNG, JPEG, GIF, TXT, LOG, JSON. Max 5MB.</p>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}
