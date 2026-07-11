@@ -4,13 +4,24 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import jwt
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.security import decode_token
+from app.core.security import decode_token, decode_ci_service_token
 from app.models.user import User
 from app.repositories.user import UserRepository
 from app.services.auth import AuthService
 from app.services.ai import AIService
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
+
+def _extract_bearer_token(request: Request, token: str | None) -> str | None:
+    if token:
+        return token
+    cookie_token = request.cookies.get("access_token")
+    if cookie_token and cookie_token.startswith("Bearer "):
+        return cookie_token[7:]
+    auth_header = request.headers.get("authorization", "")
+    if auth_header.startswith("Bearer "):
+        return auth_header[7:]
+    return None
 
 async def get_user_repository(db: AsyncSession = Depends(get_db)) -> UserRepository:
     return UserRepository(db)
@@ -32,11 +43,7 @@ async def get_current_user(
     token: str | None = Depends(oauth2_scheme),
     user_repo: UserRepository = Depends(get_user_repository)
 ) -> User:
-    # 1. Fallback: Check cookies for browser requests (HTMX uses cookies)
-    if not token:
-        token = request.cookies.get("access_token")
-        if token and token.startswith("Bearer "):
-            token = token[7:]
+    token = _extract_bearer_token(request, token)
 
     if not token:
         raise HTTPException(
@@ -107,3 +114,25 @@ async def get_current_qa_engineer(
             detail="The user does not have enough privileges."
         )
     return current_user
+
+async def get_ci_or_active_user(
+    request: Request,
+    token: str | None = Depends(oauth2_scheme),
+    user_repo: UserRepository = Depends(get_user_repository),
+) -> User | None:
+    """Accept user JWT/cookie auth or a scoped CI service token for ingestion."""
+    bearer = _extract_bearer_token(request, token)
+    if not bearer:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    try:
+        decode_ci_service_token(bearer)
+        return None
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+        pass
+
+    return await get_current_user(request, bearer, user_repo)

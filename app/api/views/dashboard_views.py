@@ -14,8 +14,12 @@ from app.models.release import Release
 from app.repositories.user import UserRepository
 from app.schemas.user import UserUpdate
 from app.services.auth import AuthService
+from app.services.coverage_service import CoverageService
+from app.services.release_service import ReleaseService
 from app.utils.logger import logger
 from uuid import UUID
+import uuid
+from datetime import date
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -60,6 +64,75 @@ async def dashboard_index(
             "stats": stats,
             "recent_runs": recent_runs,
             "active_tab": "dashboard",
+        },
+    )
+
+@router.get("/dashboard/coverage", response_class=HTMLResponse)
+async def coverage_dashboard(
+    request: Request,
+    release_id: str | None = Query(None),
+    module: str | None = Query(None),
+    date_from: date | None = Query(None),
+    date_to: date | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    coverage_service = CoverageService(db)
+    release_service = ReleaseService(db)
+    releases = await release_service.get_releases(limit=50)
+
+    release_uid = uuid.UUID(release_id) if release_id else None
+    coverage = await coverage_service.get_coverage(
+        release_id=release_uid,
+        module=module or None,
+        date_from=date_from,
+        date_to=date_to,
+    )
+
+    context = {
+        "user": current_user,
+        "coverage": coverage,
+        "releases": releases,
+        "release_id": release_id or "",
+        "module": module or "",
+        "date_from": date_from.isoformat() if date_from else "",
+        "date_to": date_to.isoformat() if date_to else "",
+        "active_tab": "coverage",
+    }
+
+    if request.headers.get("hx-request"):
+        return templates.TemplateResponse(
+            request=request,
+            name="dashboard/coverage_table.html",
+            context=context,
+        )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="dashboard/coverage.html",
+        context=context,
+    )
+
+@router.get("/dashboard/coverage/module/{module_name}", response_class=HTMLResponse)
+async def coverage_module_drilldown(
+    request: Request,
+    module_name: str,
+    release_id: str | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    coverage_service = CoverageService(db)
+    release_uid = uuid.UUID(release_id) if release_id else None
+    coverage = await coverage_service.get_module_drilldown(module_name, release_uid)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="dashboard/coverage_module.html",
+        context={
+            "user": current_user,
+            "coverage": coverage,
+            "module_name": module_name,
+            "active_tab": "coverage",
         },
     )
 

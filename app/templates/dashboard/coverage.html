@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Coverage & Trends - QualityHub{% endblock %}
+{% block content %}
+<div class="flex h-screen overflow-hidden bg-slate-950 text-slate-100">
+    {% include "components/sidebar.html" %}
+    <div class="flex-1 flex flex-col overflow-hidden">
+        {% include "components/navbar.html" %}
+        <main class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
+            <div>
+                <h1 class="text-2xl font-extrabold text-slate-100">Coverage & Trends</h1>
+                <p class="text-sm text-slate-400 mt-1">Precomputed aggregates refreshed by the background worker.</p>
+            </div>
+
+            <form method="GET" action="/dashboard/coverage" class="flex flex-wrap gap-3 items-end bg-slate-900 border border-slate-800/60 rounded-2xl p-4"
+                  hx-get="/dashboard/coverage" hx-target="#coverage-results" hx-swap="innerHTML" hx-trigger="change, submit">
+                <div>
+                    <label class="block text-xs text-slate-500 mb-1">Release</label>
+                    <select name="release_id" class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200">
+                        <option value="">All releases</option>
+                        {% for r in releases %}
+                        <option value="{{ r.id }}" {% if release_id == r.id|string %}selected{% endif %}>{{ r.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-500 mb-1">Module</label>
+                    <input type="text" name="module" value="{{ module }}" placeholder="e.g. Authentication"
+                           class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-500 mb-1">From</label>
+                    <input type="date" name="date_from" value="{{ date_from }}"
+                           class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-500 mb-1">To</label>
+                    <input type="date" name="date_to" value="{{ date_to }}"
+                           class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200">
+                </div>
+                <button type="submit" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold rounded-xl">Apply</button>
+            </form>
+
+            <div id="coverage-results">
+                {% include "dashboard/coverage_table.html" %}
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

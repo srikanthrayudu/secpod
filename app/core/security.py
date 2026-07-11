@@ -14,7 +14,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 def get_password_hash(password: str) -> str:
-    salt = bcrypt.gensalt()
+    salt = bcrypt.gensalt(rounds=12)
     return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
 
 def create_access_token(
@@ -51,3 +51,25 @@ def decode_token(token: str) -> dict[str, Any]:
         raise jwt.ExpiredSignatureError("Token has expired")
     except jwt.InvalidTokenError:
         raise jwt.InvalidTokenError("Invalid token")
+
+def create_ci_service_token(expires_delta: Union[timedelta, None] = None) -> str:
+    """Issue a scoped CI token for automated test-run ingestion."""
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(days=365)
+    to_encode = {"exp": expire, "type": "ci_service", "scope": "test_run_ingest"}
+    return jwt.encode(to_encode, settings.CI_SERVICE_TOKEN_SECRET, algorithm=settings.ALGORITHM)
+
+def decode_ci_service_token(token: str) -> dict[str, Any]:
+    try:
+        decoded = jwt.decode(
+            token, settings.CI_SERVICE_TOKEN_SECRET, algorithms=[settings.ALGORITHM]
+        )
+        if decoded.get("type") != "ci_service" or decoded.get("scope") != "test_run_ingest":
+            raise jwt.InvalidTokenError("Invalid CI service token scope.")
+        return decoded
+    except jwt.ExpiredSignatureError:
+        raise jwt.ExpiredSignatureError("CI service token has expired")
+    except jwt.InvalidTokenError:
+        raise jwt.InvalidTokenError("Invalid CI service token")

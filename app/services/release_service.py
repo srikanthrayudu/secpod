@@ -65,6 +65,17 @@ class ReleaseService:
         )
         open_defects = defects_res.scalar() or 0
 
+        critical_res = await self.db.execute(
+            select(Defect)
+            .join(TestRun, Defect.test_run_id == TestRun.id)
+            .filter(
+                TestRun.release_id == uid,
+                Defect.severity == "critical",
+                Defect.status.in_(["open", "triaged"]),
+            )
+        )
+        critical_blockers = list(critical_res.scalars().all())
+
         return {
             "release_id": uid,
             "release_name": release.name,
@@ -73,5 +84,11 @@ class ReleaseService:
             "coverage_percentage": round(coverage_pct, 2),
             "pass_rate_percentage": round(pass_rate, 2),
             "open_defects_count": open_defects,
+            "critical_blockers_count": len(critical_blockers),
+            "has_release_blockers": len(critical_blockers) > 0,
+            "critical_blockers": [
+                {"id": str(d.id), "title": d.title, "severity": d.severity, "status": d.status}
+                for d in critical_blockers
+            ],
             "status": release.status
         }

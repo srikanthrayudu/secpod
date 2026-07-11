@@ -6,6 +6,7 @@ from app.models.user import User
 from app.schemas.auth import Token, ChangePasswordRequest
 from app.schemas.user import UserCreate, UserResponse, UserUpdate
 from app.services.auth import AuthService
+from app.core.rate_limit import check_rate_limit
 import jwt
 
 router = APIRouter()
@@ -23,6 +24,7 @@ async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     auth_service: AuthService = Depends(deps.get_auth_service)
 ):
+    await check_rate_limit(f"login:{form_data.username}")
     user = await auth_service.authenticate_user(form_data.username, form_data.password)
     
     access_token = create_access_token(user.id)

@@ -13,6 +13,13 @@ from app.repositories.test_run_repository import TestRunRepository
 from app.repositories.evidence_repository import EvidenceRepository
 from app.schemas.test_run import TestRunCreate, TestRunUpdate
 
+def _schedule_coverage_recompute() -> None:
+    try:
+        from app.background.worker import recompute_coverage
+        recompute_coverage.delay()
+    except Exception:
+        pass
+
 class TestRunService:
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -84,7 +91,11 @@ class TestRunService:
             self.db.add(db_defect)
             await self.db.commit()
 
+        _schedule_coverage_recompute()
         return db_run
+
+    async def get_evidence_for_run(self, test_run_id: uuid.UUID) -> list[Evidence]:
+        return await self.evidence_repo.get_by_test_run(test_run_id)
 
     async def attach_evidence(self, test_run_id: uuid.UUID, file: UploadFile) -> Evidence:
         test_run = await self.repo.get(test_run_id)

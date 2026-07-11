@@ -37,6 +37,18 @@ async def list_defects(
         limit=limit
     )
 
+@router.get("/{id}", response_model=DefectResponse)
+async def get_defect(
+    id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    service = DefectService(db)
+    defect = await service.get_defect(id)
+    if not defect:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Defect not found.")
+    return defect
+
 @router.patch("/{id}", response_model=DefectResponse)
 async def update_defect(
     id: uuid.UUID,

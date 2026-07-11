@@ -395,14 +395,89 @@ async def test_run_detail(
         )
 
     defect_service = DefectService(db)
-    all_defects = await defect_service.get_defects(limit=200)
-    linked_defects = [d for d in all_defects if d.test_run_id and str(d.test_run_id) == str(run_id)]
+    linked_defects = await defect_service.get_defects(limit=200)
+    linked_defects = [d for d in linked_defects if d.test_run_id and str(d.test_run_id) == str(run_id)]
+    unlinked_defects = await defect_service.get_defects(limit=50)
+    unlinked_defects = [d for d in unlinked_defects if not d.test_run_id]
+
+    evidence = await service.get_evidence_for_run(run_id)
 
     return templates.TemplateResponse(
         request=request,
         name="qa/test_runs/detail.html",
-        context={"user": current_user, "run": run, "defects": linked_defects, "active_tab": "test_runs"},
+        context={
+            "user": current_user,
+            "run": run,
+            "defects": linked_defects,
+            "unlinked_defects": unlinked_defects,
+            "evidence": evidence,
+            "active_tab": "test_runs",
+        },
     )
+
+
+@router.post("/dashboard/test-runs/{run_id}/evidence", response_class=HTMLResponse)
+async def upload_evidence_view(
+    request: Request,
+    run_id: uuid.UUID,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    service = TestRunService(db)
+    try:
+        await service.attach_evidence(run_id, file)
+    except HTTPException as exc:
+        run = await service.get_test_run(run_id)
+        evidence = await service.get_evidence_for_run(run_id)
+        return templates.TemplateResponse(
+            request=request,
+            name="qa/test_runs/detail.html",
+            context={
+                "user": current_user,
+                "run": run,
+                "defects": [],
+                "unlinked_defects": [],
+                "evidence": evidence,
+                "active_tab": "test_runs",
+                "error": exc.detail,
+            },
+            status_code=exc.status_code,
+        )
+    return RedirectResponse(f"/dashboard/test-runs/{run_id}", status_code=303)
+
+
+@router.post("/dashboard/test-runs/{run_id}/defects/create", response_class=HTMLResponse)
+async def create_defect_for_run(
+    request: Request,
+    run_id: uuid.UUID,
+    title: str = Form(...),
+    description: str = Form(...),
+    severity: str = Form("medium"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    service = DefectService(db)
+    await service.create_defect(
+        DefectCreate(title=title, description=description, severity=severity, test_run_id=run_id)
+    )
+    return RedirectResponse(f"/dashboard/test-runs/{run_id}", status_code=303)
+
+
+@router.post("/dashboard/test-runs/{run_id}/defects/link", response_class=HTMLResponse)
+async def link_defect_to_run(
+    request: Request,
+    run_id: uuid.UUID,
+    defect_id: uuid.UUID = Form(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    service = DefectService(db)
+    defect = await service.get_defect(defect_id)
+    if not defect:
+        raise HTTPException(status_code=404, detail="Defect not found.")
+    await service.update_defect(defect, DefectUpdate(test_run_id=run_id))
+    return RedirectResponse(f"/dashboard/test-runs/{run_id}", status_code=303)
 
 
 # ---------------------------------------------------------------------------

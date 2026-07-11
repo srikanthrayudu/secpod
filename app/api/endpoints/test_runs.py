@@ -14,9 +14,11 @@ router = APIRouter()
 async def create_test_run(
     obj_in: TestRunCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(deps.get_current_active_user)
+    current_user: User | None = Depends(deps.get_ci_or_active_user),
 ):
     service = TestRunService(db)
+    if current_user and not obj_in.executed_by:
+        obj_in = obj_in.model_copy(update={"executed_by": current_user.id})
     return await service.create_test_run(obj_in)
 
 @router.get("", response_model=list[TestRunResponse])
